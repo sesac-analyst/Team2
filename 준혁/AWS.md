@@ -174,11 +174,15 @@
 
 <br>
 
+
 7. 성공 시 아래의 메세지가 뜹니다. 
+
 ![](https://i.imgur.com/BybMyHp.png)
 
 
 <br>
+
+
 8. close버튼 클릭 후 접속하면 이제 DB를 사용할 수 있습니다.
 ![](https://i.imgur.com/Zhv2Enn.png)
 
