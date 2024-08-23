@@ -1,18 +1,13 @@
 import scrapy
-import pdfplumber
 import pandas as pd
-from io import BytesIO
-from multiprocessing import Pool, cpu_count
 import os
 
 df = pd.read_csv('bond_date.csv')
-
 
 class BondSpider(scrapy.Spider):
     name = "bond"
     
     def start_requests(self):
-
         for index, row in df.iterrows():
             start_date = row['start']
             end_date = row['end']
@@ -21,38 +16,40 @@ class BondSpider(scrapy.Spider):
             yield scrapy.Request(url, self.parse, meta={'announce_date': announce_date})
 
     def parse(self, response):
-
         links = response.css('table.Nnavi td a::attr(href)').getall()
         
-        if not links :  #아무것도 없을 경우
-          return
+        if not links:  # 아무것도 없을 경우
+            return
         
         for link in links:
-              yield response.follow(link, self.parse_page, meta={'announce_date': response.meta['announce_date']})
+            yield response.follow(link, self.parse_page, meta={'announce_date': response.meta['announce_date']})
 
-  # 현재 페이지를 parse
     def parse_page(self, response):
-
-        pdf_links = response.css('td.file a::attr(href)').getall()  # pdf가 있는 table 지정
+        pdf_links = response.css('td.file a::attr(href)').getall()  # PDF가 있는 table 지정
 
         for pdf_link in pdf_links:
             if pdf_link:
-                yield scrapy.Request(pdf_link, self.parse_pdf, meta={'announce_date': response.meta['announce_date']})
+                yield scrapy.Request(pdf_link, self.save_pdf, meta={'announce_date': response.meta['announce_date']})
 
-    def parse_pdf(self, response):
+    def save_pdf(self, response):
+        self.log(f"Attempting to save PDF for {response.meta['announce_date']}")
         announce_date = response.meta['announce_date']
 
-        pdf_bytes = BytesIO(response.body)
-        with pdfplumber.open(pdf_bytes) as pdf:
-            pdf_text = ""
-            for page in pdf.pages:
-              pdf_text += page.extract_text()
-        pdf_text = pdf_text.replace("\n", " ").strip()
+        # 디렉토리 확인 및 생성
+        os.makedirs("downloaded_pdfs", exist_ok=True)
         
-        if pdf_text:
-            yield {
-                'date': announce_date,
-                'content': pdf_text
-            }
-            
-    
+        # 파일 이름에 고유 번호 추가
+        base_name = f"{announce_date}.pdf"
+        file_path = os.path.join("downloaded_pdfs", base_name)
+        
+        # 파일이 이미 존재하면 번호 추가
+        counter = 1
+        while os.path.exists(file_path):
+            file_path = os.path.join("downloaded_pdfs", f"{announce_date}_{counter}.pdf")
+            counter += 1
+
+        # PDF 파일 저장
+        with open(file_path, 'wb') as pdf_file:
+            pdf_file.write(response.body)
+
+        self.log(f"Saved file {file_path}")

@@ -12,8 +12,8 @@ BOT_NAME = "bond"
 SPIDER_MODULES = ["bond.spiders"]
 NEWSPIDER_MODULE = "bond.spiders"
 
-DOWNLOAD_DELAY = 5  # 2초의 지연을 추가
-CONCURRENT_REQUESTS = 1  # 동시에 1개의 요청만 처리
+#DOWNLOAD_DELAY = 5  # 2초의 지연을 추가
+#CONCURRENT_REQUESTS = 1  # 동시에 1개의 요청만 처리
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "bond (+http://www.yourdomain.com)"
