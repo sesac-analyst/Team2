@@ -1,26 +1,7 @@
 ## 뉴스·채권·금융통화위원회 의사록 감정분석 기반 금리 방향성 예측 
 
-
-
-<br>
-
-
-
-## 🔖 목차
-
-- [프로젝트 소개](#프로젝트-소개)
-- [멤버](#멤버)
-- [Project Roadmap](#Project-Roadmap)
-
-
-
-<br>
-
-
-
-## 프로젝트 소개 
-
 **Deciphering Moneetary Policy Board Minutes with Text Mining : The Case of South Korea** 논문을 구현하는 프로젝트로, 한국은행 금융통화위원회 의사록, 뉴스기사, 채권분석 리포트를 크롤링하여 텍스트 데이터를 수집하고, 이를 자연어 처리, 토픽모델링, 감성 분석을 통해 분석합니다. 최종적으로 머신 러닝 모델에 학습시켜 다음 금리의 방향성을 예측홥니다.
+
 
 
 
@@ -39,19 +20,24 @@
 
 <br>
 
+## Tech Stack
+<img src="https://img.shields.io/badge/Pandas-150458?style=flat-square&logo=Pandas&logoColor=ffffff"/> <img src="https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=NumPy&logoColor=ffffff"/> <img src="https://img.shields.io/badge/Scrapy-770000?style=flat-square&logo=Scrapy&logoColor=ffffff"/> <img src="https://img.shields.io/badge/Matplotlib-11557c?style=flat-square&logo=Matplotlib&logoColor=ffffff"/> <img src="https://img.shields.io/badge/eKoNLPy-3776AB?style=flat-square&logoColor=ffffff"/> <img src="https://img.shields.io/badge/Seaborn-4C7DAF?style=flat-square&logo=Seaborn&logoColor=ffffff"/>
+
+
+
+<br>
 
 
 ## Project Roadmap
 
 ![](https://i.imgur.com/wh7YiFV.png)
 
-1. 분석·기획
+1. [분석·기획](#1-분석기획)
 
    * 프로젝트 목표 정의
-
    * 프로젝트 계획 수립
 
-2. 데이터 준비
+2. [데이터 준비](#2-데이터-준비)
    * 데이터 수집 및 클렌징
    * 데이터 전처리
 
@@ -72,9 +58,9 @@
 
 
 
-## 분석·기획
+## 1. 분석·기획
 
-### 1. 프로젝트 목표 정의
+### 프로젝트 목표 정의
 
 **"Deciphering Monetary Policy Board Minutes with Text Mining: The Case of South Korea"** 논문 구현 프로젝트로, 뉴스기사, 채권분석 리포트, 한국은행 금융통화 위원회 의사록을 크롤링하여 텍스트 데이터를 수집합니다. 
 
@@ -86,7 +72,7 @@
 
 
 
-### 2. 프로젝트 계획 수립
+### 프로젝트 계획 수립
 
 1) **필요 데이터 정의**
 
@@ -120,7 +106,7 @@
 
    
 
-4) **통계 기반 모델링 **
+4) **통계 기반 모델링**
 
    1. Naive Bayes Classification
 
@@ -166,9 +152,9 @@
 
 
 
-## 데이터 준비
+## 2. 데이터 준비
 
-### 1. 데이터 수집 및 클렌징
+### 데이터 수집 및 클렌징
 
 1. 금융통화위원회 의사록 크롤링
 
@@ -514,72 +500,78 @@
 
      - **크롤링 코드**
 
-       ```python
-       import scrapy
-       import pandas as pd
-       
-       # CSV 파일 읽기
-       df = pd.read_csv('edaily_date.csv')
-       
-       class EdailySpider(scrapy.Spider):
-           name = 'edaily'
-           allowed_domains = ["edaily.co.kr"]
-       
-           def start_requests(self):
-               x = 0
-               for index, row in df.iterrows():
-                   start_date = row['start']
-                   end_date = row['end']
-                   announce_date = int(row['announce_date'])
-                   url = f'<https://www.edaily.co.kr/search/news/?source=total&keyword=%ea%b8%88%eb%a6%ac&include=&exclude=&jname=&start={start_date}&end={end_date}&sort=&date=pick&exact=false&page=1>'
-                   yield scrapy.Request(url, self.parse, meta={'start_date': start_date, 'end_date': end_date, 'page': 1, 'announce_date': announce_date})
-       
-           def parse(self, response):
-               # 뉴스 목록 페이지에서 각 뉴스 기사의 링크를 추출
-               article_links = response.css('div.newsbox_04 a::attr(href)').getall()
-               
-               # 만약 기사 링크가 없으면 더 이상 페이지가 없다고 판단
-               if not article_links:
-                   self.logger.info(f"No articles found on page {response.url}. No more pages.")
-                   return
-       
-               for link in article_links:
-                   yield response.follow(link, self.parse_article, meta={'announce_date': response.meta['announce_date']})
-               
-               # 다음 페이지로 이동
-               current_page = response.meta['page']
-               next_page = current_page + 1
-               next_page_url = f'<https://www.edaily.co.kr/search/news/?source=total&keyword=%ea%b8%88%eb%a6%ac&include=&exclude=&jname=&start={response.meta["start_date"]}&end={response.meta["end_date"]}&sort=&date=pick&exact=false&page={next_page}>'
-               
-               # 페이지에 기사 링크가 있으면 다음 페이지로 이동
-               if article_links:
-                   yield scrapy.Request(next_page_url, self.parse, meta={'start_date': response.meta['start_date'], 'end_date': response.meta['end_date'], 'page': next_page, 'announce_date': response.meta['announce_date']})
-       
-           def parse_article(self, response):
-               # 뉴스 본문과 제목 추출
-               title = response.css('div.news_titles h1::text').get()
-               content = response.css('div.news_body::text').getall()
-               
-               # 데이터가 없을 경우 처리
-               if not title:
-                   self.logger.error(f"Missing title for URL: {response.url}")
-                   return
-               
-               title = title.strip()
-               content = ''.join(content).strip()
-               announce_date = response.meta['announce_date']
-               
-               if '재송' in title:
-                   self.logger.info(f"Skipping duplicated article: {title}")
-                   return
-               
-               yield {
-                   'announce_date': announce_date,
-                   'title': title,
-                   'content': content,
-                   'url': response.url
-               }
-       ```
+        <details>
+          <summary>Python Code</summary>
+        
+        
+          ```python
+        import scrapy
+        import pandas as pd
+        
+        # CSV 파일 읽기
+        df = pd.read_csv('edaily_date.csv')
+        
+        class EdailySpider(scrapy.Spider):
+            name = 'edaily'
+            allowed_domains = ["edaily.co.kr"]
+        
+            def start_requests(self):
+                x = 0
+                for index, row in df.iterrows():
+                    start_date = row['start']
+                    end_date = row['end']
+                    announce_date = int(row['announce_date'])
+                    url = f'<https://www.edaily.co.kr/search/news/?source=total&keyword=%ea%b8%88%eb%a6%ac&include=&exclude=&jname=&start={start_date}&end={end_date}&sort=&date=pick&exact=false&page=1>'
+                    yield scrapy.Request(url, self.parse, meta={'start_date': start_date, 'end_date': end_date, 'page': 1, 'announce_date': announce_date})
+        
+            def parse(self, response):
+                # 뉴스 목록 페이지에서 각 뉴스 기사의 링크를 추출
+                article_links = response.css('div.newsbox_04 a::attr(href)').getall()
+                
+                # 만약 기사 링크가 없으면 더 이상 페이지가 없다고 판단
+                if not article_links:
+                    self.logger.info(f"No articles found on page {response.url}. No more pages.")
+                    return
+        
+                for link in article_links:
+                    yield response.follow(link, self.parse_article, meta={'announce_date': response.meta['announce_date']})
+                
+                # 다음 페이지로 이동
+                current_page = response.meta['page']
+                next_page = current_page + 1
+                next_page_url = f'<https://www.edaily.co.kr/search/news/?source=total&keyword=%ea%b8%88%eb%a6%ac&include=&exclude=&jname=&start={response.meta["start_date"]}&end={response.meta["end_date"]}&sort=&date=pick&exact=false&page={next_page}>'
+                
+                # 페이지에 기사 링크가 있으면 다음 페이지로 이동
+                if article_links:
+                    yield scrapy.Request(next_page_url, self.parse, meta={'start_date': response.meta['start_date'], 'end_date': response.meta['end_date'], 'page': next_page, 'announce_date': response.meta['announce_date']})
+        
+            def parse_article(self, response):
+                # 뉴스 본문과 제목 추출
+                title = response.css('div.news_titles h1::text').get()
+                content = response.css('div.news_body::text').getall()
+                
+                # 데이터가 없을 경우 처리
+                if not title:
+                    self.logger.error(f"Missing title for URL: {response.url}")
+                    return
+                
+                title = title.strip()
+                content = ''.join(content).strip()
+                announce_date = response.meta['announce_date']
+                
+                if '재송' in title:
+                    self.logger.info(f"Skipping duplicated article: {title}")
+                    return
+                
+                yield {
+                    'announce_date': announce_date,
+                    'title': title,
+                    'content': content,
+                    'url': response.url
+                }
+          ```
+        
+        </details>
 
    - **한국경제**
 
@@ -588,62 +580,66 @@
        한국경제에서 2005년 06월 09일 부터 2024년 07월 11일까지 뉴스 기사 건의 본문을 scrapy를 이용하여 104,438건 크롤링 했습니다. 금융통화위원회 의사록의 pdf크롤링 가능한 일자와 맞추기 위해 2005년 06월 09년을 시작일 기준으로 잡았습니다.
 
      - **크롤링 코드**
-
-       ```python
-       import pandas as pd
-       import subprocess
-       import os
-       
-       # CSV 파일 읽기
-       date_ranges = pd.read_csv('/content/date_range.csv', sep=',')
-       
-       # 열 이름 확인 (첫 번째 몇 줄 출력)
-       print(date_ranges.head())
-       
-       # 실제 헤더 이름을 확인하여 'start'와 'end'가 맞는지 확인
-       # 만약 헤더가 다르다면 다음과 같이 수정
-       # date_ranges.columns = ['start', 'end']  # 실제 파일의 헤더에 맞춰 수정
-       
-       # 날짜를 파싱하여 datetime 형식으로 변환
-       date_ranges['start'] = pd.to_datetime(date_ranges['start'], format='%Y.%m.%d')
-       date_ranges['end'] = pd.to_datetime(date_ranges['end'], format='%Y.%m.%d')
-       
-       # 출력 디렉토리 생성
-       output_dir = 'output'
-       os.makedirs(output_dir, exist_ok=True)
-       
-       # 각 날짜 범위를 순회하며 Scrapy 명령 실행
-       for index, row in date_ranges.iterrows():
-           start_date = row['start'].strftime('%Y.%m.%d')
-           end_date = row['end'].strftime('%Y.%m.%d')
-       
-           # 날짜 범위에 따라 출력 파일 이름 정의
-           output_file = os.path.join(output_dir, f'hankyung_news_{start_date}_to_{end_date}.json')
-       
-           # 실행할 Scrapy 명령어
-           command = [
-               'scrapy', 'runspider', 'hankyung.py',
-               '-a', f'search_term=금리',
-               '-a', f'start_date={start_date}',
-               '-a', f'end_date={end_date}',
-               '-o', output_file,
-               '--loglevel=DEBUG'  # 로그 레벨을 DEBUG로 설정
-           ]
-       
-           # 명령어 실행 및 로그 캡처
-           result = subprocess.run(command, capture_output=True, text=True)
-       
-           # 표준 출력 및 오류 출력 로그 표시
-           print(f"Output for {start_date} to {end_date}:")
-           print(result.stdout)
-           if result.stderr:
-               print(f"Errors for {start_date} to {end_date}:")
-               print(result.stderr)
-       
-           # 오류 발생 시 예외 처리
-           if result.returncode != 0:
-               print(f"Scrapy command failed for {start_date} to {end_date}.")
-       ```
+        <details>
+          <summary>Python Code</summary>
+        
+          ```python
+        import pandas as pd
+        import subprocess
+        import os
+        
+        # CSV 파일 읽기
+        date_ranges = pd.read_csv('/content/date_range.csv', sep=',')
+        
+        # 열 이름 확인 (첫 번째 몇 줄 출력)
+        print(date_ranges.head())
+        
+        # 실제 헤더 이름을 확인하여 'start'와 'end'가 맞는지 확인
+        # 만약 헤더가 다르다면 다음과 같이 수정
+        # date_ranges.columns = ['start', 'end']  # 실제 파일의 헤더에 맞춰 수정
+        
+        # 날짜를 파싱하여 datetime 형식으로 변환
+        date_ranges['start'] = pd.to_datetime(date_ranges['start'], format='%Y.%m.%d')
+        date_ranges['end'] = pd.to_datetime(date_ranges['end'], format='%Y.%m.%d')
+        
+        # 출력 디렉토리 생성
+        output_dir = 'output'
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # 각 날짜 범위를 순회하며 Scrapy 명령 실행
+        for index, row in date_ranges.iterrows():
+            start_date = row['start'].strftime('%Y.%m.%d')
+            end_date = row['end'].strftime('%Y.%m.%d')
+        
+            # 날짜 범위에 따라 출력 파일 이름 정의
+            output_file = os.path.join(output_dir, f'hankyung_news_{start_date}_to_{end_date}.json')
+        
+            # 실행할 Scrapy 명령어
+            command = [
+                'scrapy', 'runspider', 'hankyung.py',
+                '-a', f'search_term=금리',
+                '-a', f'start_date={start_date}',
+                '-a', f'end_date={end_date}',
+                '-o', output_file,
+                '--loglevel=DEBUG'  # 로그 레벨을 DEBUG로 설정
+            ]
+        
+            # 명령어 실행 및 로그 캡처
+            result = subprocess.run(command, capture_output=True, text=True)
+        
+            # 표준 출력 및 오류 출력 로그 표시
+            print(f"Output for {start_date} to {end_date}:")
+            print(result.stdout)
+            if result.stderr:
+                print(f"Errors for {start_date} to {end_date}:")
+                print(result.stderr)
+        
+            # 오류 발생 시 예외 처리
+            if result.returncode != 0:
+                print(f"Scrapy command failed for {start_date} to {end_date}.")
+          ```
+        
+        </details>
 
    - **매일경제**
 
@@ -652,77 +648,104 @@
        연합인포맥스에서 2013년 05월 09일 부터 2013년 09월 01일까지 크롤링 했습니다. 학습을 위한 적절한 데이터를 수집하기 위해 10년 이상 정보를 추출하려 했습니다. 2013년 05월 09일을 기준으로 잡은 이유는 기준금리 변경일이었기 때문에 기준점으로 정했습니다. 총 114,739건의 뉴스를 수집했습니다.
 
      - **크롤링 코드**
+      
+        <details>
+          <summary>Python Code</summary>
+        
+          ```python
+          import requests
+          from bs4 import BeautifulSoup
+          import os
+          
+          # 크롤링할 페이지의 수를 추출
+          url = f"<https://news.einfomax.co.kr/news/articleList.html?page=1&total=6417&sc_section_code=&sc_sub_section_code=&sc_serial_code=&sc_area=A&sc_level=&sc_article_type=&sc_view_level=&sc_sdate=2019-01-01&sc_edate=2019-12-31&sc_serial_number=&sc_word=%EA%B8%88%EB%A6%AC&box_idxno=&sc_multi_code=&sc_is_image=&sc_is_movie=&sc_user_name=&sc_order_by=E&view_type=sm>"
+          headers = {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+              'Referer': '<https://www.naver.com/>'
+              }
+          base = '<https://news.einfomax.co.kr>'
+          response = requests.get(url, headers=headers)
+          soup = BeautifulSoup(response.text, 'html.parser')
+          total = soup.select_one('#sections > section > header > h3 > small').text
+          total_num = ''
+          for i in total:
+              if i.isdigit():
+                  total_num += i
+          total_num = int(total_num)
+          page_num_0 = total_num / 20
+          page_num_1 = total_num // 20
+          if page_num_0 != page_num_1:
+              pages = page_num_1 + 1
+          else:
+              pages = page_num_1
+          pages #1~페이지부터 pages 까지 크롤링
+          for page in range(1,pages+1):
+              url = f"<https://news.einfomax.co.kr/news/articleList.html?page={page}&total=6417&sc_section_code=&sc_sub_section_code=&sc_serial_code=&sc_area=A&sc_level=&sc_article_type=&sc_view_level=&sc_sdate=2019-01-01&sc_edate=2019-12-31&sc_serial_number=&sc_word=%EA%B8%88%EB%A6%AC&box_idxno=&sc_multi_code=&sc_is_image=&sc_is_movie=&sc_user_name=&sc_order_by=E&view_type=sm>"
+              headers = {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+                  'Referer': '<https://www.naver.com/>'
+                  }
+              base = '<https://news.einfomax.co.kr>'
+              response = requests.get(url, headers=headers)
+              soup = BeautifulSoup(response.text, 'html.parser')
+              li_tg = soup.select('ul.type2>li>h4.titles>a') #해당 페이지에 있는 뉴스기사 링크 리스트
+              for i in li_tg:
+                  target = i.attrs['href']
+                  crawling_url = base + target
+                  response = requests.get(crawling_url, headers=headers)
+                  crawling_soup = BeautifulSoup(response.text, 'html.parser') # 해당 뉴스기사 링크의 html 정보 추출
+                  title = crawling_soup.select_one('h3.heading').text
+                  new_title = '' #타이틀 전처리 결과
+                  for i in title:
+                      if i == "/":
+                          new_title += "_"
+                      else:
+                          new_title += i
+                  date_li = crawling_soup.select('ul.infomation>li')[1].text
+                  date_li = date_li.split("입력")
+                  date = date_li[-1]
+                  date = date.replace('.','_')
+                  date = date.replace(':','_')
+                  
+                  date #날짜
+                  info = crawling_soup.select_one('#article-view-content-div').text
+                  info = info.replace('\\n','')
+                  info = info.replace('\\r','')
+                  info = info.replace('\\t','')
+                  info #내용
+                  
+                  #파일 작성
+                  print(f'./news/2019{date}_연합인포맥스.text')
+                  with open(f'./news/2019/{date}_연합인포맥스.text', 'w', encoding='utf-8') as f:
+                      f.write('제목\\n')
+                      f.write(f'{new_title}\\n')
+                      f.write('\\n')
+                      f.write('내용\\n')
+                      f.write(f'{info}\\n')
+          ```
+        
+        
+      </details>
 
-       ```python
-       import requests
-       from bs4 import BeautifulSoup
-       import os
-       
-       # 크롤링할 페이지의 수를 추출
-       url = f"<https://news.einfomax.co.kr/news/articleList.html?page=1&total=6417&sc_section_code=&sc_sub_section_code=&sc_serial_code=&sc_area=A&sc_level=&sc_article_type=&sc_view_level=&sc_sdate=2019-01-01&sc_edate=2019-12-31&sc_serial_number=&sc_word=%EA%B8%88%EB%A6%AC&box_idxno=&sc_multi_code=&sc_is_image=&sc_is_movie=&sc_user_name=&sc_order_by=E&view_type=sm>"
-       headers = {
-           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-           'Referer': '<https://www.naver.com/>'
-           }
-       base = '<https://news.einfomax.co.kr>'
-       response = requests.get(url, headers=headers)
-       soup = BeautifulSoup(response.text, 'html.parser')
-       total = soup.select_one('#sections > section > header > h3 > small').text
-       total_num = ''
-       for i in total:
-           if i.isdigit():
-               total_num += i
-       total_num = int(total_num)
-       page_num_0 = total_num / 20
-       page_num_1 = total_num // 20
-       if page_num_0 != page_num_1:
-           pages = page_num_1 + 1
-       else:
-           pages = page_num_1
-       pages #1~페이지부터 pages 까지 크롤링
-       for page in range(1,pages+1):
-           url = f"<https://news.einfomax.co.kr/news/articleList.html?page={page}&total=6417&sc_section_code=&sc_sub_section_code=&sc_serial_code=&sc_area=A&sc_level=&sc_article_type=&sc_view_level=&sc_sdate=2019-01-01&sc_edate=2019-12-31&sc_serial_number=&sc_word=%EA%B8%88%EB%A6%AC&box_idxno=&sc_multi_code=&sc_is_image=&sc_is_movie=&sc_user_name=&sc_order_by=E&view_type=sm>"
-           headers = {
-               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-               'Referer': '<https://www.naver.com/>'
-               }
-           base = '<https://news.einfomax.co.kr>'
-           response = requests.get(url, headers=headers)
-           soup = BeautifulSoup(response.text, 'html.parser')
-           li_tg = soup.select('ul.type2>li>h4.titles>a') #해당 페이지에 있는 뉴스기사 링크 리스트
-           for i in li_tg:
-               target = i.attrs['href']
-               crawling_url = base + target
-               response = requests.get(crawling_url, headers=headers)
-               crawling_soup = BeautifulSoup(response.text, 'html.parser') # 해당 뉴스기사 링크의 html 정보 추출
-               title = crawling_soup.select_one('h3.heading').text
-               new_title = '' #타이틀 전처리 결과
-               for i in title:
-                   if i == "/":
-                       new_title += "_"
-                   else:
-                       new_title += i
-               date_li = crawling_soup.select('ul.infomation>li')[1].text
-               date_li = date_li.split("입력")
-               date = date_li[-1]
-               date = date.replace('.','_')
-               date = date.replace(':','_')
-               
-               date #날짜
-               info = crawling_soup.select_one('#article-view-content-div').text
-               info = info.replace('\\n','')
-               info = info.replace('\\r','')
-               info = info.replace('\\t','')
-               info #내용
-               
-               #파일 작성
-               print(f'./news/2019{date}_연합인포맥스.text')
-               with open(f'./news/2019/{date}_연합인포맥스.text', 'w', encoding='utf-8') as f:
-                   f.write('제목\\n')
-                   f.write(f'{new_title}\\n')
-                   f.write('\\n')
-                   f.write('내용\\n')
-                   f.write(f'{info}\\n')
-       ```
+4. **콜 금리 / 기준 금리 크롤링**
+   - 한국은행 경제통계시스템에서 일별 콜 금리 및 기준 금리 데이터 파일 다운로드 했습니다.
 
-   
+
+<br>
+
+### 데이터 전처리
+* 사용 라이브러리 : eKoNLPy [GitHub - entelecheia/eKoNLPy: Korean NLP Python Library for Economic Analysis](https://github.com/entelecheia/eKoNLPy)
+* 사용 모듈 : MPKO
+
+
+<br>
+
+1. **관련 용어 n-gram 토큰화**
+   * 크롤링한 데이터를 ekonlpy의 MPKO모듈을 사용하여 경제 관련 용어를 n-gram 토큰으로 저장하였습니다.
+        
+        
+3. **라벨링**
+   * 기준 금리 발표일을 기준으로 단위기간 설정했습니다.(약 1개월)
+   * 이전 단위기간 대비 콜 금리 변동이 0.1이상 상승/하락시 1(상승)/2(하락)으로 라벨링, 그 외에는 0(변동없음)으로 라벨링했습니다.
+
+
