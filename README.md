@@ -1,6 +1,6 @@
 ## 뉴스·채권·금융통화위원회 의사록 감정분석 기반 금리 방향성 예측 
 
-**Deciphering Moneetary Policy Board Minutes with Text Mining : The Case of South Korea** 논문을 구현하는 프로젝트로, 한국은행 금융통화위원회 의사록, 뉴스기사, 채권분석 리포트를 크롤링하여 텍스트 데이터를 수집하고, 이를 자연어 처리, 토픽모델링, 감성 분석을 통해 분석합니다. 최종적으로 머신 러닝 모델에 학습시켜 다음 금리의 방향성을 예측홥니다.
+**Deciphering Monetary Policy Board Minutes with Text Mining : The Case of South Korea** 논문을 구현하는 프로젝트로, 한국은행 금융통화위원회 의사록, 뉴스기사, 채권분석 리포트를 크롤링하여 텍스트 데이터를 수집하고, 이를 자연어 처리, 토픽모델링, 감성 분석을 통해 분석합니다. 최종적으로 머신 러닝 모델에 학습시켜 다음 금리의 방향성을 예측홥니다.
 
 
 
