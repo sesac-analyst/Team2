@@ -41,12 +41,12 @@
    * 데이터 수집 및 클렌징
    * 데이터 전처리
 
-3. 모델링
+3. [모델링](#3-모델링)
    * 모델 개발
    * 모델 검증 및 평가
    * 시각화
 
-4. 평가
+4. [평가](#4-평가)
 
    * 결론
    * 기대효과
@@ -763,9 +763,240 @@
 
 ### 모델 개발
   1. **Naive Bayes Classifier 감정 분류 코드 구현**
-      1. 문서 간 레이블 개수 차이로 인해 모델 성능이 저하될 가능성이 있으므로, 부분 언더샘플링을 적용하여 하락 레이블의 개수인 49,185개의 80%인 40,343개씩 랜덤으로 추출합니다. 동결, 상승, 하락 레이블 각각에서 40,343개씩 샘플을 추출한 후, 각 샘플에서 n-gram 토큰의 유니크 집합을 생성하고, 각 토큰이 어떤 극성의 문서에 몇 번 등장했는지 집계합니다.
-      2. 각 샘플 내의 토큰별로 극성별 확률을 계산합니다.
-      3. 모든 문서에 대해 각 샘플을 적용하여 문서의 극성을 매긴 후, 가장 많이 나타난 극성으로 문서의 극성을 리라벨링 합니다.
-      4. **시장 접근법**:
-          - 극성(상승, 동결, 하락)으로 분류된 문서들을 **Naive Bayes Classifier** 모델에 학습시킵니다.
-          - 모든 문서에 대해 Naive Bayes 분류기를 사용해 **극성을 상승, 동결, 하락으로 다시 삼진 분류**한 후, 한 기간 동안 가장 많이 등장한 극성을 기준으로 실제 기준 금리 변동과 비교합니다.
+     1. **부분 언더샘플링 적용 및 토큰 집계**
+       * **문서 간 레이블의 불균형을 해결**하기 위해, 하락 레이블을 기준으로 80%인 40,343개씩 각 레이블(상승, 동결, 하락)에서 랜덤 샘플링을 진행했습니다.
+       * 각 샘플에서 **n-gram 토큰의 유니크 집합**을 생성하고, 각 토큰이 특정 극성의 문서에 몇 번 등장했는지 집계합니다.
+       * 학습 데이터는 1~5-gram으로 변환되었으며, 최소 빈도수 15 이상인 n-gram만을 사용합니다. 이 과정에서 **자주 사용되지 않는 n-gram**은 학습에서 제외하여 노이즈를 줄입니다.
+     2. **Naive Bayes 확률 계산**
+       * 각 샘플 내의 **토큰별로 극성에 대한 확률을 계산**하여, 문서가 특정 극성(상승, 동결, 하락)으로 분류될 확률을 구합니다.
+     3. **문서 극성 라벨링**
+       * 모든 문서에 대해 계산된 확률을 기반으로 **문서의 극성을 결정**하며, 가장 높은 확률을 가지는 극성으로 문서를 리라벨링합니다.
+     4. **시장 접근법**
+       * 극성(상승, 동결, 하락)으로 분류된 문서들을 **Naive Bayes Classifier** 모델에 학습시킵니다.
+       * 모든 문서에 대해 Naive Bayes 분류기를 사용해 **극성을 상승, 동결, 하락으로 다시 삼진 분류**한 후, 한 기간 동안 가장 많이 등장한 극성을 기준으로 실제 기준 금리 변동과 비교합니다.
+    
+
+<br>
+
+### 모델 검증
+* cm1: 뉴스&채권분석보고서 기반 예측 결과 
+* cm2: 의사록 기반 예측 결과
+
+
+#### 코드
+  <details>
+    <summary>Python Code</summary>
+  
+    ```python
+  	import csv
+  	import pandas as pd
+  	
+  	df = pd.read_csv('updated_df_token.csv')
+  	interest_rate = pd.read_csv("interest_rate.csv") 
+  	base_rate = pd.read_csv('base_rate.csv')
+  	
+  	x0 = df[df['predicted_rate_change'] == 0]
+  	x1 = df[df['predicted_rate_change'] == 1]
+  	x2 = df[df['predicted_rate_change'] == 2]
+  	
+  	x0_count =  x0.groupby(x0.index).size()
+  	x1_count =  x1.groupby(x1.index).size()
+  	x2_count =  x2.groupby(x2.index).size()
+  	
+  	interest_rate['0'] = x0_count.reindex(interest_rate.index).fillna(0).astype(int)
+  	interest_rate['1'] = x1_count.reindex(interest_rate.index).fillna(0).astype(int)
+  	interest_rate['2'] = x2_count.reindex(interest_rate.index).fillna(0).astype(int)
+  	
+  	interest_rate['polarity'] = base_rate['polarity']
+  	interest_rate['pred'] = interest_rate[['0', '1', '2']].idxmax(axis=1)
+  	
+  	
+  	correct_predictions = (interest_rate['pred'] == interest_rate['polarity']).sum()
+  	total_predictions = len(interest_rate)
+  	
+  	accuracy = correct_predictions / total_predictions
+  	print(f"'pred'와 'polarity'의 정확도: {accuracy:.2f}")
+    ```
+  
+  
+  </details>
+  
+  **accuracy:0.55**
+  
+  
+  <details>
+    <summary>Python Code</summary>
+  
+    ```python
+  	import pandas as pd
+  	import numpy as np
+  	import seaborn as sns
+  	import matplotlib.pyplot as plt
+  	from sklearn.metrics import confusion_matrix
+  	
+  	
+  	base_rate = pd.read_csv("C:/Users/SesacPython/Desktop/dataset/금리예측프로젝트/base_rate.csv")
+  	
+  	# confusion matrix
+  	# cm1 - 뉴스 기반 예측 기준
+  	# cm2 - 의사록 기반 예측 기준
+  	y_true = list(base_rate.polarity)
+  	y_pred_by_news = list(base_rate.pred)
+  	y_pred_by_mpc = list(base_rate.mpc_pol_pred)
+  	cm1 = confusion_matrix(y_true, y_pred_by_news)
+  	cm2 = confusion_matrix(y_true, y_pred_by_mpc)
+  	
+  	# accuracy, precision, recall, f1 score 계산
+  	cm1_accuracy = sum([cm1[i][i] for i in range(3)]) / sum(sum(cm1))
+  	cm2_accuracy = sum([cm2[i][i] for i in range(3)]) / sum(sum(cm2))
+  	
+  	cm1_precision_0 = cm1[0][0] / sum([cm1[i][0] for i in range(3)])
+  	cm1_precision_1 = cm1[1][1] / sum([cm1[i][1] for i in range(3)])
+  	cm1_precision_2 = cm1[2][2] / sum([cm1[i][2] for i in range(3)])
+  	
+  	
+  	cm2_precision_0 = cm2[0][0] / sum([cm2[i][0] for i in range(3)])
+  	cm2_precision_1 = cm2[1][1] / sum([cm2[i][1] for i in range(3)])
+  	cm2_precision_2 = cm2[2][2] / sum([cm2[i][2] for i in range(3)])
+  	
+  	
+  	cm1_recall_0 = cm1[0][0] / sum(cm1[0])
+  	cm1_recall_1 = cm1[1][1] / sum(cm1[1])
+  	cm1_recall_2 = cm1[2][2] / sum(cm1[2])
+  	
+  	
+  	cm2_recall_0 = cm2[0][0] / sum(cm2[0])
+  	cm2_recall_1 = cm2[1][1] / sum(cm2[1])
+  	cm2_recall_2 = cm2[2][2] / sum(cm2[2])
+  	
+  	cm1_f1_0 = 2*cm1_precision_0*cm1_recall_0 / (cm1_precision_0 + cm1_recall_0)
+  	cm1_f1_1 = 2*cm1_precision_1*cm1_recall_1 / (cm1_precision_1 + cm1_recall_1)
+  	cm1_f1_2 = 2*cm1_precision_2*cm1_recall_2 / (cm1_precision_2 + cm1_recall_2)
+  	
+  	cm2_f1_0 = 2*cm2_precision_0*cm2_recall_0 / (cm2_precision_0 + cm2_recall_0)
+  	cm2_f1_1 = 2*cm2_precision_1*cm2_recall_1 / (cm2_precision_1 + cm2_recall_1)
+  	cm2_f1_2 = 2*cm2_precision_2*cm2_recall_2 / (cm2_precision_2 + cm2_recall_2)
+  	
+  	# sklearn 활용(cm1)
+  	from sklearn.metrics import classification_report
+  	print(classification_report(y_true, y_pred_by_news))
+    ```
+  
+  
+  </details>
+
+
+<br>
+
+#### cm1&cm2 Confusion Matrix
+![](https://i.imgur.com/fe9h8na.png)
+
+<br>
+
+#### cm1(뉴스&채권분석 보고서 기반 예측 결과)
+![](https://i.imgur.com/R12hQ42.png)
+![](https://i.imgur.com/FS4NJev.png)
+
+<br>
+
+#### cm2(의사록 기반 예측 결과)
+![](https://i.imgur.com/PIT2SqV.png)
+![](https://i.imgur.com/19k9GM6.png)
+
+<br>
+
+### 시각화
+
+#### 1. 금리 동결 직전 기간(극성=0)의 Wordcloud
+![3_WC2](https://github.com/user-attachments/assets/f0559f66-057b-4d1f-b00a-86d30d2af9d0)
+
+<br>
+
+#### 1-1. 금리 동결 직전 기간(극성=0)의 Top 20 토큰
+![7_number_of_category](https://github.com/user-attachments/assets/27b76b3b-2fcb-4187-81ac-3184d99a7c5a)
+
+<br>
+
+#### 2. 금리 상승 직전 기간(극성=1)의 Wordcloud
+![2_WC1](https://github.com/user-attachments/assets/5f177bc6-55b1-4208-a5df-04529d9cabdd)
+
+<br>
+
+#### 2-1. 금리 상승 직전 기간(극성=1)의 Top 20 토큰
+![6_top20token_2](https://github.com/user-attachments/assets/b1620882-209d-4272-ad4e-73620d5f7809)
+
+<br>
+
+#### 3. 금리 하락 직전 기간(극성=2)의 Wordcloud
+![1_WC0](https://github.com/user-attachments/assets/40f2b3f7-111c-49f7-b42c-d373842bdc5e)
+
+<br>
+
+#### 3-1. 금리 하락 직전 기간(극성=2)의 Top 20 토큰
+
+![5_top20token_1](https://github.com/user-attachments/assets/2a84155c-0fce-4804-9372-7428fd8e40c4)
+
+
+<br>
+
+#### 4. category별 문서 수(BD:채권분석보고서, ED:이데일리, HAN:한경, MK:매일경제)
+![4_top20token_0](https://github.com/user-attachments/assets/b9fdcc55-5895-4c69-9d4b-d1a18a29dec4)
+
+<br>
+
+#### 5. 극성 및 카테고리 별 문서 수
+![8_num_by_ratechange](https://github.com/user-attachments/assets/68e330bb-0a14-4509-86bd-fdefc98c8f5e)
+
+<br>
+
+#### 6. 극성 및 카테고리 별 단위기간당 문서 수
+![9_num_by_ratechange_per_period](https://github.com/user-attachments/assets/7f4220cd-327c-41e2-8f3b-ebbdeff29615)
+
+<br>
+
+#### 7. 극성 별 단위 기간 당 총 문서 수
+![10_total_num_by_ratechange_per_period](https://github.com/user-attachments/assets/087e09c3-6425-44c7-a7fc-e8c828e18ad2)
+
+<br>
+
+#### 8. 콜 금리 & 기준금리 추이
+![11_base_rate_and_call_rate](https://github.com/user-attachments/assets/370c5e91-3e57-4a25-9159-95000c7cde58)
+
+
+<br>
+
+#### 9. 기준금리 & 극성 예측(뉴스&채권 기반)
+![12_base_rate_and_pred_by_news](https://github.com/user-attachments/assets/9ad45380-0e4f-4e80-9b80-0a7535bbffa4)
+
+
+<br>
+
+
+
+#### 10. 기준금리 & 극성 예측(의사록 기반)
+![13_base_rate_and_pred_by_mpc](https://github.com/user-attachments/assets/26202319-24af-498c-b95b-5f6eb739c606)
+
+
+<br>
+
+
+## 4. 평가
+
+### 결론
+전체 극성(0: 동결, 1: 상승, 2: 하락)에 대한 정확도는 각각 0.55(cm1)와 0.45(cm2)로 높은 편은 아니지만, 상승(1)과 하락(2)에 대한 Recall 값이 매우 높은 것으로 나타났습니다.
+
+<br>
+
+
+### 기대 효과
+상승과 하락에 대해 높은 Recall 값을 보인 점을 고려할 때, 다른 요소에서의 정확도를 보완한다면 금리 방향성을 보다 높은 신뢰도로 예측할 수 있을 것으로 기대됩니다.
+
+<br>
+
+
+### 한계점 및 개선 방안
+현재 모델은 상승과 하락에 대해 높은 Recall 값을 보이나, 전반적인 예측 정확도가 낮아 모든 극성에 대해 균형 잡힌 성능을 제공하지 못하고 있습니다. 이는 텍스트 분석 과정에서 Ekonlpy의 MPKO를 사용해 문서를 통째로 토큰화하여 계산한 방식의 한계로 보입니다.
+
+<br>
+
+이를 개선하기 위해 문서를 세부적으로 나누어 정밀한 분석을 수행하고, 추가적인 특징(feature)을 추출하여 모델에 반영하는 방안을 고려할 필요가 있습니다.
