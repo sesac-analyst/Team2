@@ -923,7 +923,8 @@
 <br>
 
 #### 2-1. 금리 상승 직전 기간(극성=1)의 Top 20 토큰
-![6_top20token_2](https://github.com/user-attachments/assets/b1620882-209d-4272-ad4e-73620d5f7809)
+![5_top20token_1](https://github.com/user-attachments/assets/2a84155c-0fce-4804-9372-7428fd8e40c4)
+
 
 <br>
 
@@ -933,8 +934,7 @@
 <br>
 
 #### 3-1. 금리 하락 직전 기간(극성=2)의 Top 20 토큰
-
-![5_top20token_1](https://github.com/user-attachments/assets/2a84155c-0fce-4804-9372-7428fd8e40c4)
+![6_top20token_2](https://github.com/user-attachments/assets/b1620882-209d-4272-ad4e-73620d5f7809)
 
 
 <br>
