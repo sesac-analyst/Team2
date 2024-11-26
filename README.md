@@ -913,7 +913,7 @@
 <br>
 
 #### 1-1. 금리 동결 직전 기간(극성=0)의 Top 20 토큰
-![7_number_of_category](https://github.com/user-attachments/assets/27b76b3b-2fcb-4187-81ac-3184d99a7c5a)
+![4_top20token_0](https://github.com/user-attachments/assets/b9fdcc55-5895-4c69-9d4b-d1a18a29dec4)
 
 <br>
 
@@ -940,7 +940,8 @@
 <br>
 
 #### 4. category별 문서 수(BD:채권분석보고서, ED:이데일리, HAN:한경, MK:매일경제)
-![4_top20token_0](https://github.com/user-attachments/assets/b9fdcc55-5895-4c69-9d4b-d1a18a29dec4)
+![7_number_of_category](https://github.com/user-attachments/assets/27b76b3b-2fcb-4187-81ac-3184d99a7c5a)
+
 
 <br>
 
