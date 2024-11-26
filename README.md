@@ -908,7 +908,7 @@
 ### 시각화
 
 #### 1. 금리 동결 직전 기간(극성=0)의 Wordcloud
-![3_WC2](https://github.com/user-attachments/assets/f0559f66-057b-4d1f-b00a-86d30d2af9d0)
+![1_WC0](https://github.com/user-attachments/assets/40f2b3f7-111c-49f7-b42c-d373842bdc5e)
 
 <br>
 
@@ -929,7 +929,8 @@
 <br>
 
 #### 3. 금리 하락 직전 기간(극성=2)의 Wordcloud
-![1_WC0](https://github.com/user-attachments/assets/40f2b3f7-111c-49f7-b42c-d373842bdc5e)
+![3_WC2](https://github.com/user-attachments/assets/f0559f66-057b-4d1f-b00a-86d30d2af9d0)
+
 
 <br>
 
